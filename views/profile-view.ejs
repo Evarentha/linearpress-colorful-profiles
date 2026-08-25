@@ -1,0 +1,66 @@
+<!--
+  Author: MoyuZJ
+  Team: LinearTeam
+  Contact: linearteam@foxmail.com
+  Made by MoyuZJ in China with ♥
+  多彩个人资料 —— 公开资料页（需登录）
+-->
+
+<section class="cf-page cf-profile">
+  <div class="cf-profile-head">
+    <%- cfAvatarHtml(profile.user_id, 96, 'cf-profile-avatar') %>
+    <div class="cf-profile-id">
+      <h1><%= profile.nickname || profile.username %></h1>
+      <div class="cf-profile-username">@<%= profile.username %></div>
+      <div class="cf-profile-email"><%= profile.email || '' %></div>
+    </div>
+  </div>
+
+  <% if (profile.website) { %>
+    <div class="cf-profile-item cf-profile-website-item"><span class="cf-item-label">网站</span><a class="cf-profile-website" href="<%= profile.website %>" target="_blank" rel="noopener"><%= profile.website %></a></div>
+  <% } %>
+  <% if (profile.contact) { %>
+    <div class="cf-profile-item"><span class="cf-item-label">联系方式</span><span class="cf-profile-contact"><%= profile.contact %></span></div>
+  <% } %>
+  <% if (profile.representative) { %>
+    <div class="cf-profile-item"><span class="cf-item-label">代表作</span><span class="cf-profile-work"><%= profile.representative %></span></div>
+  <% } %>
+  <% if (profile.bio) { %>
+    <div class="cf-profile-bio"><%- bioHtml %></div>
+  <% } %>
+
+  <div class="cf-profile-posts" id="cf-timeline" data-username="<%= profile.username %>" data-page-size="<%= timelinePageSize %>" data-has-more="<%= hasMore ? '1' : '0' %>">
+    <h2>最近文章</h2>
+    <div class="cf-tl" id="cf-tl">
+      <%
+        var groups = [];
+        var lastKey = '';
+        (posts || []).forEach(function (p) {
+          var key = String(p.created_at || '').slice(0, 7);
+          if (key !== lastKey) { groups.push({ key: key, items: [] }); lastKey = key; }
+          groups[groups.length - 1].items.push(p);
+        });
+      %>
+      <% groups.forEach(function (group) { %>
+        <div class="cf-tl-group" data-month="<%= group.key %>">
+          <div class="cf-tl-month"><span class="cf-tl-dot"></span><span class="cf-tl-month-text"><%= group.key.replace(/^(\d{4})-(\d{2})$/, function (m, y, mo) { return y + '年' + Number(mo) + '月'; }) %></span></div>
+          <div class="cf-tl-items">
+            <% group.items.forEach(function (p) { %>
+              <div class="cf-tl-item" data-date="<%= String(p.created_at || '').slice(0, 10) %>">
+                <span class="cf-tl-marker"></span>
+                <a class="cf-tl-link" href="<%= p.url %>"><%= p.title %></a>
+                <span class="cf-tl-date"><%= String(p.created_at || '').slice(0, 10).replace(/-/g, '/') %></span>
+              </div>
+            <% }) %>
+          </div>
+        </div>
+      <% }) %>
+      <% if (!groups.length) { %><p class="cf-tl-empty">还没有发布文章。</p><% } %>
+    </div>
+    <% if (hasMore) { %><button type="button" class="button cf-load-more" id="cf-load-more">加载更多</button><% } %>
+  </div>
+</section>
+
+<script>
+window.__CF_TIMELINE__ = { username: "<%= profile.username %>", pageSize: <%= timelinePageSize %> };
+</script>

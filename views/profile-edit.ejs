@@ -1,0 +1,145 @@
+<!--
+  Author: MoyuZJ
+  Team: LinearTeam
+  Contact: linearteam@foxmail.com
+  Made by MoyuZJ in China with ♥
+  多彩个人资料 —— 资料编辑页
+-->
+
+<section class="cf-page">
+  <div class="cf-edit-head">
+    <h1>编辑个人资料</h1>
+    <% if (cp.emailVerifyEnabled) { %><span class="cf-verify-badge <%= cp.verified ? 'cf-verified' : 'cf-unverified' %>"><%= cp.verified ? '✓ 邮箱已验证' : '✗ 邮箱未验证' %></span><% } %>
+  </div>
+
+  <form id="cf-profile-form" class="cf-form" novalidate>
+    <input type="hidden" name="avatar" id="cf-avatar-hidden" value="<%= profile.avatar || '' %>">
+    <input type="hidden" name="avatar_removed" id="cf-avatar-removed" value="">
+
+    <div class="cf-field cf-field-avatar">
+      <label class="cf-label">头像</label>
+      <div class="cf-avatar-wrap">
+        <div class="cf-avatar-preview" id="cf-avatar-preview">
+          <%- cfAvatarHtml(currentUser.id, 96, 'cf-avatar-preview-img') %>
+        </div>
+        <button type="button" class="cf-avatar-edit" id="cf-avatar-edit" title="编辑头像" aria-label="编辑头像"><span>✎</span></button>
+        <input type="file" id="cf-avatar-file" accept="image/png,image/gif,image/jpeg,image/webp" hidden>
+        <a class="cf-avatar-remove" id="cf-avatar-remove" href="javascript:void(0)" hidden>移除头像</a>
+      </div>
+      <div class="cf-avatar-actions">
+        <button type="button" class="button" id="cf-avatar-pick" <%= cp.mediaEnabled ? '' : 'hidden' %>>从媒体库选择</button>
+        <span class="cf-avatar-hint">支持 JPG / PNG / GIF（含动态）/ WebP，画面 ≤ <%= cp.avatarSizeLimitPx %>×<%= cp.avatarSizeLimitPx %>，文件 ≤ <%= cp.avatarMaxFileSizeMb %>MB</span>
+      </div>
+      <div class="cf-avatar-status" id="cf-avatar-status"></div>
+    </div>
+
+    <div class="cf-field">
+      <label class="cf-label" for="cf-username">用户名 / Username</label>
+      <input type="text" id="cf-username" class="cf-input" value="<%= user.username %>" readonly disabled>
+      <p class="cf-help">用户名是登录凭据之一，无法修改。</p>
+    </div>
+
+    <div class="cf-field">
+      <label class="cf-label" for="cf-nickname">昵称 / Nickname</label>
+      <input type="text" id="cf-nickname" name="nickname" class="cf-input" value="<%= profile.nickname || '' %>" maxlength="60" placeholder="留空则显示用户名">
+      <p class="cf-help">昵称非空时将在全站替代用户名显示。</p>
+    </div>
+
+    <div class="cf-field">
+      <label class="cf-label" for="cf-email">邮箱 / Email</label>
+      <input type="email" id="cf-email" name="email" class="cf-input" value="<%= user.email || '' %>" data-original-email="<%= user.email || '' %>">
+      <% if (cp.emailVerifyEnabled) { %><p class="cf-help cf-help-warn">更改邮箱后将需重新验证，验证完成前无法发布文章与评论。</p><% } %>
+    </div>
+
+    <div class="cf-field">
+      <label class="cf-label" for="cf-website">网站 / Website</label>
+      <input type="url" id="cf-website" name="website" class="cf-input" value="<%= profile.website || '' %>" maxlength="300" placeholder="https://example.com">
+      <p class="cf-help">渲染时自动生成链接。</p>
+    </div>
+
+    <div class="cf-field">
+      <label class="cf-label" for="cf-bio">描述 / Bio（支持 Markdown）</label>
+      <textarea id="cf-bio" name="bio" class="cf-input cf-textarea" rows="6" maxlength="5000" placeholder="介绍你自己，支持 **加粗**、*斜体*、`代码`、列表与链接…"><%= profile.bio || '' %></textarea>
+    </div>
+
+    <div class="cf-field">
+      <label class="cf-label" for="cf-contact">联系方式 / Contact</label>
+      <input type="text" id="cf-contact" name="contact" class="cf-input" value="<%= profile.contact || '' %>" maxlength="300" placeholder="邮箱 / 微信 / Telegram 等">
+    </div>
+
+    <div class="cf-field">
+      <label class="cf-label" for="cf-representative">代表作 / Representative Work</label>
+      <input type="text" id="cf-representative" name="representative" class="cf-input" value="<%= profile.representative || '' %>" maxlength="300" placeholder="你的代表作名称或链接">
+    </div>
+
+    <div class="cf-edit-footer">
+      <button type="button" class="button cf-save-btn" id="cf-save-btn">保存</button>
+    </div>
+  </form>
+</section>
+
+<!-- 头像裁剪弹窗（PC + 触屏兼容） -->
+<div class="cf-modal" id="cf-crop-modal" role="dialog" aria-modal="true" hidden>
+  <div class="cf-modal-box">
+    <h3>裁剪头像（正方形）</h3>
+    <p class="cf-modal-sub">拖动或缩放裁剪框，头像须裁剪为正方形后上传。</p>
+    <div class="cf-crop-stage">
+      <div class="cf-crop-wrap" id="cf-crop-wrap">
+        <img id="cf-crop-image" alt="待裁剪头像" draggable="false">
+        <div class="cf-crop-rect" id="cf-crop-rect"></div>
+      </div>
+    </div>
+    <div class="cf-modal-actions">
+      <button type="button" class="button cf-btn-ghost" id="cf-crop-cancel">取消</button>
+      <button type="button" class="button" id="cf-crop-confirm">裁剪完成</button>
+      <button type="button" class="button cf-btn-upload" id="cf-upload-new" hidden>上传新头像</button>
+    </div>
+  </div>
+</div>
+
+<!-- 非侵入式保存确认 -->
+<div class="cf-popover" id="cf-confirm-pop" hidden>
+  <div class="cf-popover-box">
+    <h4>确认保存这些更改？</h4>
+    <p class="cf-popover-text" id="cf-confirm-text">点击「确认保存」后立即生效。</p>
+    <div class="cf-popover-actions">
+      <button type="button" class="button cf-btn-ghost" id="cf-confirm-cancel">取消</button>
+      <button type="button" class="button" id="cf-confirm-ok">确认保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 改邮箱侵入式提示 -->
+<div class="cf-modal cf-modal-intrusive" id="cf-email-modal" role="dialog" aria-modal="true" hidden>
+  <div class="cf-modal-box">
+    <h3>⚠️ 邮箱更改后需再次验证</h3>
+    <p class="cf-modal-sub">你的邮箱将由 <strong id="cf-email-old"></strong> 修改为 <strong id="cf-email-new"></strong>。保存后你将立即回到<b>未验证状态</b>：无法发布文章与评论，需要点击新邮箱中的验证链接后方可恢复。</p>
+    <div class="cf-modal-actions">
+      <button type="button" class="button cf-btn-ghost" id="cf-email-cancel">取消</button>
+      <button type="button" class="button cf-btn-danger" id="cf-email-ok">同意并继续</button>
+    </div>
+  </div>
+</div>
+
+<!-- 媒体库选择弹窗 -->
+<div class="cf-modal" id="cf-media-modal" role="dialog" aria-modal="true" hidden>
+  <div class="cf-modal-box cf-media-box">
+    <h3>从媒体库选择头像</h3>
+    <div class="cf-media-grid" id="cf-media-grid"><p class="cf-media-loading">加载中…</p></div>
+    <div class="cf-modal-actions">
+      <button type="button" class="button cf-btn-ghost" id="cf-media-cancel">取消</button>
+    </div>
+  </div>
+</div>
+
+<script>
+window.__CF_CONFIG__ = {
+  uploadUrl: '/profile/avatar',
+  saveUrl: '/profile/edit',
+  mediaApi: '/api/media-library?kind=image',
+  mediaEnabled: <%= cp.mediaEnabled ? 'true' : 'false' %>,
+  emailVerifyEnabled: <%= cp.emailVerifyEnabled ? 'true' : 'false' %>,
+  sizeLimitPx: <%= cp.avatarSizeLimitPx %>,
+  sizeLimitMb: <%= cp.avatarMaxFileSizeMb %>
+};
+</script>

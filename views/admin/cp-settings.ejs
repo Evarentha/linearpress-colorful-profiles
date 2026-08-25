@@ -1,0 +1,69 @@
+<!--
+  Author: MoyuZJ
+  Team: LinearTeam
+  Contact: linearteam@foxmail.com
+  Made by MoyuZJ in China with ♥
+  多彩个人资料 —— 设置页
+-->
+
+<section class="cf-page cf-admin-page">
+  <div class="cf-edit-head"><h1>多彩个人资料 · 设置</h1></div>
+  <% if (notice === 'saved') { %><p class="cf-notice">设置已保存。</p><% } else if (notice) { %><p class="cf-notice cf-notice-error"><%= notice %></p><% } %>
+
+  <form method="post" action="<%= '/admin/colorful-profiles/settings' %>" class="cf-form">
+    <div class="cf-field">
+      <label class="cf-label" for="avatar_size_limit">头像最大画面边长（px）</label>
+      <input type="number" id="avatar_size_limit" name="avatar_size_limit" class="cf-input" value="<%= config.avatarSizeLimitPx %>" min="1" max="4096">
+      <p class="cf-help">大于该尺寸的图片会被拒绝。</p>
+    </div>
+
+    <div class="cf-field">
+      <label class="cf-label" for="avatar_max_size_mb">头像最大文件大小（MB）</label>
+      <input type="number" id="avatar_max_size_mb" name="avatar_max_size_mb" class="cf-input" value="<%= config.avatarMaxFileSizeMb %>" min="1" max="50" step="1">
+    </div>
+
+    <div class="cf-field cf-field-check">
+      <label class="cf-label"><input type="checkbox" name="allow_gif" <%= config.allowGif ? 'checked' : '' %>> 允许 GIF 动态头像</label>
+      <p class="cf-help">关闭后上传动态 GIF 将被拒绝（静态 GIF 仍允许）。</p>
+    </div>
+
+    <div class="cf-field cf-field-check">
+      <label class="cf-label"><input type="checkbox" name="allow_apng" <%= config.allowApng ? 'checked' : '' %>> 允许动态 PNG（APNG）头像</label>
+      <p class="cf-help">关闭后上传 APNG 将被拒绝（静态 PNG 仍允许）。</p>
+    </div>
+
+    <div class="cf-field">
+      <label class="cf-label" for="timeline_page_size">资料页时间线单次加载数量</label>
+      <input type="number" id="timeline_page_size" name="timeline_page_size" class="cf-input" value="<%= config.timelinePageSize %>" min="1" max="50">
+    </div>
+
+    <div class="cf-field">
+      <label class="cf-label" for="avatar_dir">头像存储目录（相对 uploads）</label>
+      <input type="text" id="avatar_dir" name="avatar_dir" class="cf-input" value="<%= config.avatarDir %>" maxlength="60">
+      <p class="cf-help">默认 avatars，即 ./uploads/avatars/。</p>
+    </div>
+
+    <div class="cf-field">
+      <label class="cf-label">依赖检测</label>
+      <p class="cf-help">高级评论：<span id="cf-dep-ac"></span> ｜ 高级用户管理：<span id="cf-dep-aum"></span> ｜ 媒体库：<span id="cf-dep-media"></span></p>
+    </div>
+
+    <div class="cf-edit-footer">
+      <button type="submit" class="button cf-save-btn">保存设置</button>
+    </div>
+  </form>
+</section>
+
+<script>
+(function () {
+  fetch('/api/colorful-profiles/deps').then(function (r) { return r.json(); }).then(function (data) {
+    document.getElementById('cf-dep-ac').textContent = data.ac ? '✓ 已启用' : '✗ 未启用';
+    document.getElementById('cf-dep-aum').textContent = data.aum ? '✓ 已启用' : '✗ 未启用';
+    document.getElementById('cf-dep-media').textContent = data.media ? '✓ 已启用' : '✗ 未启用';
+  }).catch(function () {
+    document.getElementById('cf-dep-ac').textContent = '未知';
+    document.getElementById('cf-dep-aum').textContent = '未知';
+    document.getElementById('cf-dep-media').textContent = '未知';
+  });
+})();
+</script>
