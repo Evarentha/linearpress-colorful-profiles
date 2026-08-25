@@ -35,17 +35,17 @@
       <%
         var groups = [];
         var lastKey = '';
-        (posts || []).forEach(function (p) {
+        (posts || []).forEach((p) => {
           var key = String(p.created_at || '').slice(0, 7);
           if (key !== lastKey) { groups.push({ key: key, items: [] }); lastKey = key; }
           groups[groups.length - 1].items.push(p);
         });
       %>
-      <% groups.forEach(function (group) { %>
+      <% groups.forEach((group) => { %>
         <div class="cf-tl-group" data-month="<%= group.key %>">
-          <div class="cf-tl-month"><span class="cf-tl-dot"></span><span class="cf-tl-month-text"><%= group.key.replace(/^(\d{4})-(\d{2})$/, function (m, y, mo) { return y + '年' + Number(mo) + '月'; }) %></span></div>
+          <div class="cf-tl-month"><span class="cf-tl-dot"></span><span class="cf-tl-month-text"><%= group.key.replace(/^(\d{4})-(\d{2})$/, (m, y, mo) => { return y + '年' + Number(mo) + '月'; }) %></span></div>
           <div class="cf-tl-items">
-            <% group.items.forEach(function (p) { %>
+            <% group.items.forEach((p) => { %>
               <div class="cf-tl-item" data-date="<%= String(p.created_at || '').slice(0, 10) %>">
                 <span class="cf-tl-marker"></span>
                 <a class="cf-tl-link" href="<%= p.url %>"><%= p.title %></a>

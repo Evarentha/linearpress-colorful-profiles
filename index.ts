@@ -50,6 +50,10 @@ const text = (value: unknown): string => String(value ?? '').trim();
 
 function messageOf(error: unknown): string { return error instanceof Error ? error.message : '操作失败'; }
 function json(res: Response, status: number, payload: unknown): void { res.status(status).json(payload); }
+/** JSON API 处理器包装：失败时返回 { ok:false }（与 Base JSON 约定一致）。 */
+const wrapJson = (fn: (req: Request, res: Response) => Promise<unknown> | unknown): RequestHandler => (req, res) => {
+  void Promise.resolve(fn(req, res)).catch((error) => json(res, 500, { ok: false, message: messageOf(error) }));
+};
 
 async function isEnabled(ctx: Context, id: string): Promise<boolean> {
   try {
@@ -107,17 +111,19 @@ export default async function colorfulProfiles(ctx: Context): Promise<void> {
     subDir: config.avatarDir
   };
 
-  // ------------------------------------------------------------ 通用中间件
+  // ------------------------------------------------------------ 权限守卫（与 Base requireAuth/checkPermission 同构）
   const requireLogin: RequestHandler = (req, res, next) => {
-    if (!req.session.userId) return res.redirect(`/login?next=${encodeURIComponent(req.originalUrl || '/')}`);
+    if (!req.session.userId) return res.redirect('/login');
     next();
   };
-  const requireManage: RequestHandler = async (req, res, next) => {
+  /** 管理端守卫工厂：登录 + colorful-profiles:manage 权限校验，失败渲染 error 视图。 */
+  const checkManagePermission = (): RequestHandler => async (req, res, next) => {
     if (!req.session.userId) return res.redirect('/login');
     const allowed = await Promise.resolve(ctx.permissions.has(req.session.userId, MANAGE_PERMISSION)).catch(() => false);
     if (!allowed) return res.status(403).render('error', { title: '权限不足', message: '你没有管理多彩个人资料的权限。' });
     next();
   };
+  const requireManage = checkManagePermission();
 
   // ------------------------------------------------------------ site:locals 注入
   hooks.on('site:locals', async (locals: Record<string, unknown>) => {
@@ -205,100 +211,89 @@ export default async function colorfulProfiles(ctx: Context): Promise<void> {
     });
   });
 
-  web.register('post', '/profile/edit', requireLogin, async (req, res) => {
-    try {
-      const userId = req.session.userId!;
-      const body = (req.body ?? {}) as Record<string, unknown>;
-      const user = await ctx.users.findById(userId);
-      if (!user) return json(res, 404, { ok: false, message: '用户不存在' });
+  // JSON API：使用 wrapJson，失败统一返回 { ok:false }。
+  web.register('post', '/profile/edit', requireLogin, wrapJson(async (req, res) => {
+    const userId = req.session.userId!;
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const user = await ctx.users.findById(userId);
+    if (!user) return json(res, 404, { ok: false, message: '用户不存在' });
 
-      const nickname = text(body.nickname).slice(0, 60);
-      const websiteRaw = text(body.website).slice(0, 300);
-      const website =
-        /^https?:\/\/[^\s]+$/i.test(websiteRaw) ? websiteRaw :
-        /^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}(\/\S*)?$/i.test(websiteRaw) ? `https://${websiteRaw}` :
-        '';
-      const bio = String(body.bio ?? '').slice(0, 5000);
-      const contact = text(body.contact).slice(0, 300);
-      const representative = text(body.representative).slice(0, 300);
-      const newEmailRaw = text(body.email);
+    const nickname = text(body.nickname).slice(0, 60);
+    const websiteRaw = text(body.website).slice(0, 300);
+    const website =
+      /^https?:\/\/[^\s]+$/i.test(websiteRaw) ? websiteRaw :
+      /^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}(\/\S*)?$/i.test(websiteRaw) ? `https://${websiteRaw}` :
+      '';
+    const bio = String(body.bio ?? '').slice(0, 5000);
+    const contact = text(body.contact).slice(0, 300);
+    const representative = text(body.representative).slice(0, 300);
+    const newEmailRaw = text(body.email);
 
-      // 邮箱变更
-      let needsVerify = false;
-      let emailChanged = false;
-      if (newEmailRaw !== (user.email ?? '')) {
-        emailChanged = true;
-        const sanitized = newEmailRaw || null;
-        const ev = aumEmailVerify(ctx);
-        if (ev) {
-          // 先发验证邮件，发送成功后再提交变更，避免用户被置于无法验证的状态。
-          const token = randomUUID().replace(/-/g, '');
-          const origin = `${req.protocol}://${req.get('host')}`;
-          const mail = buildVerificationMail(ev, {
-            siteName: getBaseConfig().siteName || 'LinearPress',
-            username: user.username,
-            verifyUrl: `${origin}/verify?token=${token}`,
-            siteUrl: origin
-          });
-          try {
-            await sendVerificationMail(ev, sanitized ?? '', mail.subject, mail.html);
-          } catch (error) {
-            return json(res, 400, { ok: false, message: `验证邮件发送失败，邮箱未变更：${messageOf(error)}` });
-          }
-          await updateUserEmail(db, userId, sanitized);
-          await markEmailPending(db, userId, token, Date.now() + ev.tokenTtlHours * 3600 * 1000);
-          needsVerify = true;
-        } else {
-          await updateUserEmail(db, userId, sanitized);
-        }
+    // 邮箱变更
+    let needsVerify = false;
+    let emailChanged = false;
+    if (newEmailRaw !== (user.email ?? '')) {
+      emailChanged = true;
+      const sanitized = newEmailRaw || null;
+      const ev = aumEmailVerify(ctx);
+      if (ev) {
+        // 先发验证邮件，发送成功后再提交变更，避免用户被置于无法验证的状态。
+        const token = randomUUID().replace(/-/g, '');
+        const origin = `${req.protocol}://${req.get('host')}`;
+        const mail = buildVerificationMail(ev, {
+          siteName: getBaseConfig().siteName || 'LinearPress',
+          username: user.username,
+          verifyUrl: `${origin}/verify?token=${token}`,
+          siteUrl: origin
+        });
+        await sendVerificationMail(ev, sanitized ?? '', mail.subject, mail.html).catch((error: unknown) => { throw new Error(`验证邮件发送失败，邮箱未变更：${messageOf(error)}`); });
+        await updateUserEmail(db, userId, sanitized);
+        await markEmailPending(db, userId, token, Date.now() + ev.tokenTtlHours * 3600 * 1000);
+        needsVerify = true;
+      } else {
+        await updateUserEmail(db, userId, sanitized);
       }
-
-      // 媒体库头像选择（表单携带 avatar 字段）
-      let avatar = text(body.avatar);
-      let avatarCrop: string | null = null;
-      if (avatar && !avatar.startsWith(AVATAR_STATIC_PREFIX)) {
-        // 确认是合法的媒体库或站内图片路径
-        if (!/^\/(media-library\/files|uploads|plugins)\//.test(avatar)) avatar = '';
-      }
-      // 移除头像
-      if (text(body.avatar_removed) === '1') { avatar = ''; avatarCrop = ''; }
-
-      const fields: Partial<Profile> = { nickname: nickname || null, website: website || null, bio: bio || null, contact: contact || null, representative: representative || null };
-      if (avatar) { fields.avatar = avatar; fields.avatar_crop = null; }
-      else if (avatarCrop === '') { fields.avatar = null; fields.avatar_crop = null; }
-      await upsertProfile(db, userId, fields);
-
-      json(res, 200, {
-        ok: true,
-        emailChanged,
-        needsVerify,
-        message: needsVerify ? '资料已保存。邮箱已变更，请前往新邮箱完成验证后恢复完整权限。' : '资料已保存。'
-      });
-    } catch (error) {
-      json(res, 400, { ok: false, message: messageOf(error) });
     }
-  });
+
+    // 媒体库头像选择（表单携带 avatar 字段）
+    let avatar = text(body.avatar);
+    let avatarCrop: string | null = null;
+    if (avatar && !avatar.startsWith(AVATAR_STATIC_PREFIX)) {
+      // 确认是合法的媒体库或站内图片路径
+      if (!/^\/(media-library\/files|uploads|plugins)\//.test(avatar)) avatar = '';
+    }
+    // 移除头像
+    if (text(body.avatar_removed) === '1') { avatar = ''; avatarCrop = ''; }
+
+    const fields: Partial<Profile> = { nickname: nickname || null, website: website || null, bio: bio || null, contact: contact || null, representative: representative || null };
+    if (avatar) { fields.avatar = avatar; fields.avatar_crop = null; }
+    else if (avatarCrop === '') { fields.avatar = null; fields.avatar_crop = null; }
+    await upsertProfile(db, userId, fields);
+
+    json(res, 200, {
+      ok: true,
+      emailChanged,
+      needsVerify,
+      message: needsVerify ? '资料已保存。邮箱已变更，请前往新邮箱完成验证后恢复完整权限。' : '资料已保存。'
+    });
+  }));
 
   // ------------------------------------------------------------ 头像上传
-  web.register('post', '/profile/avatar', requireLogin, async (req, res) => {
-    try {
-      const userId = req.session.userId!;
-      const contentType = String(req.headers['content-type'] ?? '');
-      const body = await readRawBody(req);
-      const { fields, files } = parseMultipart(body, contentType);
-      const file = files.find((f) => f.field === 'avatar') ?? files[0];
-      if (!file || !file.buffer.length) return json(res, 400, { ok: false, message: '未选择头像文件。' });
+  web.register('post', '/profile/avatar', requireLogin, wrapJson(async (req, res) => {
+    const userId = req.session.userId!;
+    const contentType = String(req.headers['content-type'] ?? '');
+    const body = await readRawBody(req);
+    const { fields, files } = parseMultipart(body, contentType);
+    const file = files.find((f) => f.field === 'avatar') ?? files[0];
+    if (!file || !file.buffer.length) return json(res, 400, { ok: false, message: '未选择头像文件。' });
 
-      const info = validateAvatar(file.buffer, config, fields.width, fields.height);
-      const crop = parseCrop(fields.crop) ?? null;
-      const ext = { gif: 'gif', png: 'png', jpeg: 'jpg', webp: 'webp' }[info.kind];
-      const url = await storeAvatar(avatarStore, userId, file.buffer, ext);
-      await upsertProfile(db, userId, { avatar: url, avatar_crop: crop ? JSON.stringify(crop) : null });
-      json(res, 200, { ok: true, avatarUrl: url, crop });
-    } catch (error) {
-      json(res, 400, { ok: false, message: messageOf(error) });
-    }
-  });
+    const info = validateAvatar(file.buffer, config, fields.width, fields.height);
+    const crop = parseCrop(fields.crop) ?? null;
+    const ext = { gif: 'gif', png: 'png', jpeg: 'jpg', webp: 'webp' }[info.kind];
+    const url = await storeAvatar(avatarStore, userId, file.buffer, ext);
+    await upsertProfile(db, userId, { avatar: url, avatar_crop: crop ? JSON.stringify(crop) : null });
+    json(res, 200, { ok: true, avatarUrl: url, crop });
+  }));
 
   // 头像静态托管
   web.register('get', `${AVATAR_STATIC_PREFIX}/:file`, async (req, res) => {
@@ -332,18 +327,14 @@ export default async function colorfulProfiles(ctx: Context): Promise<void> {
   });
 
   // 时间线 lazyload API
-  web.register('get', '/api/profiles/:username/posts', requireLogin, async (req, res) => {
-    try {
-      const user = await ctx.users.findByUsername(text(req.params.username));
-      if (!user) return json(res, 404, { ok: false, message: '用户不存在' });
-      const offset = Math.max(0, Number(req.query.offset) || 0);
-      const limit = Math.max(1, Math.min(50, Number(req.query.limit) || config.timelinePageSize));
-      const result = await listUserPosts(db, user.id, offset, limit, getBaseConfig());
-      json(res, 200, { ok: true, posts: result.items, hasMore: result.hasMore, nextOffset: offset + limit });
-    } catch (error) {
-      json(res, 400, { ok: false, message: messageOf(error) });
-    }
-  });
+  web.register('get', '/api/profiles/:username/posts', requireLogin, wrapJson(async (req, res) => {
+    const user = await ctx.users.findByUsername(text(req.params.username));
+    if (!user) return json(res, 404, { ok: false, message: '用户不存在' });
+    const offset = Math.max(0, Number(req.query.offset) || 0);
+    const limit = Math.max(1, Math.min(50, Number(req.query.limit) || config.timelinePageSize));
+    const result = await listUserPosts(db, user.id, offset, limit, getBaseConfig());
+    json(res, 200, { ok: true, posts: result.items, hasMore: result.hasMore, nextOffset: offset + limit });
+  }));
 
   // ------------------------------------------------------------ 管理端 设置页
   hooks.on('admin:menu', (menu: Array<{ title: string; link: string }>) => [...menu, { title: '多彩个人资料', link: SETTINGS_URL }]);

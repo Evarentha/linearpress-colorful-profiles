@@ -55,12 +55,12 @@
 </section>
 
 <script>
-(function () {
-  fetch('/api/colorful-profiles/deps').then(function (r) { return r.json(); }).then(function (data) {
+(() => {
+  fetch('/api/colorful-profiles/deps').then((r) => { return r.json(); }).then((data) => {
     document.getElementById('cf-dep-ac').textContent = data.ac ? '✓ 已启用' : '✗ 未启用';
     document.getElementById('cf-dep-aum').textContent = data.aum ? '✓ 已启用' : '✗ 未启用';
     document.getElementById('cf-dep-media').textContent = data.media ? '✓ 已启用' : '✗ 未启用';
-  }).catch(function () {
+  }).catch(() => {
     document.getElementById('cf-dep-ac').textContent = '未知';
     document.getElementById('cf-dep-aum').textContent = '未知';
     document.getElementById('cf-dep-media').textContent = '未知';
