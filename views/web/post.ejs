@@ -12,7 +12,7 @@
 <div class="article-body"><%- html %></div></article>
 <section class="comments ac-comments">
   <h2>评论</h2>
-  <% if (acCommentError) { %><p class="ac-error"><%- acCommentError %></p><% } %>
+  <% if (acCommentError) { %><p class="ac-error"><%= acCommentError %></p><% } %>
   <% if (notice) { %><p class="notice">评论已提交，等待审核。</p><% } %>
   <% comments.forEach(comment => { %>
     <% var meta = (ac && ac.meta && ac.meta[comment.id]) || null; %>

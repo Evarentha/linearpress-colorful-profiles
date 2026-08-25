@@ -20,7 +20,7 @@ function inline(text: string): string {
   out = out.replace(/`([^`]+)`/g, (_m, code: string) => `<code>${code}</code>`);
   // 链接 [text](url)
   out = out.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_m, label: string, url: string) => {
-    const safe = /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(url) || url.startsWith('/') || url.startsWith('#') ? url : '#';
+    const safe = /^https?:\/\//i.test(url) || /^mailto:[^\s@]+@[^\s@]+$/i.test(url) || url.startsWith('/') || url.startsWith('#') ? url : '#';
     return `<a href="${safe}" target="_blank" rel="noopener">${label}</a>`;
   });
   // 粗体

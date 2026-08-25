@@ -12,7 +12,8 @@
     <div class="cf-profile-id">
       <h1><%= profile.nickname || profile.username %></h1>
       <div class="cf-profile-username">@<%= profile.username %></div>
-      <div class="cf-profile-email"><%= profile.email || '' %></div>
+      <!-- 隐私：公开资料页不再展示邮箱，避免被爬虫收割 -->
+      <% if (currentUser && currentUser.id === user.id) { %><div class="cf-profile-email"><%= profile.email || '' %></div><% } %>
     </div>
   </div>
 

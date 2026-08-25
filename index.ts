@@ -126,8 +126,19 @@ export default async function colorfulProfiles(ctx: Context): Promise<void> {
   const requireManage = checkManagePermission();
 
   // ------------------------------------------------------------ site:locals 注入
+  // profiles 全量映射缓存：site:locals 每请求触发，users JOIN profiles 全表查询以 TTL + 写入失效控制成本。
+  const PROFILES_TTL_MS = 15_000;
+  let profilesCache: { at: number; data: Awaited<ReturnType<typeof loadProfilesMap>> } | null = null;
+  const invalidateProfilesCache = (): void => { profilesCache = null; };
+  const profilesMap = async () => {
+    if (profilesCache && Date.now() - profilesCache.at < PROFILES_TTL_MS) return profilesCache.data;
+    const data = await loadProfilesMap(db);
+    profilesCache = { at: Date.now(), data };
+    return data;
+  };
+
   hooks.on('site:locals', async (locals: Record<string, unknown>) => {
-    const profiles = await loadProfilesMap(db);
+    const profiles = await profilesMap();
     const parseCropJson = (raw: string | null): { x: number; y: number; size: number; sizeY?: number } | null => {
       if (!raw) return null;
       try {
@@ -239,7 +250,9 @@ export default async function colorfulProfiles(ctx: Context): Promise<void> {
       if (ev) {
         // 先发验证邮件，发送成功后再提交变更，避免用户被置于无法验证的状态。
         const token = randomUUID().replace(/-/g, '');
-        const origin = `${req.protocol}://${req.get('host')}`;
+        // 优先使用站点配置主域名，防止 Host 头投毒污染激活链接。
+        const primary = text(getBaseConfig().primaryDomain ?? '').replace(/^https?:\/\//i, '').replace(/\/+$/, '');
+        const origin = primary ? `${req.protocol}://${primary}` : `${req.protocol}://${req.get('host')}`;
         const mail = buildVerificationMail(ev, {
           siteName: getBaseConfig().siteName || 'LinearPress',
           username: user.username,
@@ -249,9 +262,11 @@ export default async function colorfulProfiles(ctx: Context): Promise<void> {
         await sendVerificationMail(ev, sanitized ?? '', mail.subject, mail.html).catch((error: unknown) => { throw new Error(`验证邮件发送失败，邮箱未变更：${messageOf(error)}`); });
         await updateUserEmail(db, userId, sanitized);
         await markEmailPending(db, userId, token, Date.now() + ev.tokenTtlHours * 3600 * 1000);
+        invalidateProfilesCache();
         needsVerify = true;
       } else {
         await updateUserEmail(db, userId, sanitized);
+        invalidateProfilesCache();
       }
     }
 
@@ -269,6 +284,7 @@ export default async function colorfulProfiles(ctx: Context): Promise<void> {
     if (avatar) { fields.avatar = avatar; fields.avatar_crop = null; }
     else if (avatarCrop === '') { fields.avatar = null; fields.avatar_crop = null; }
     await upsertProfile(db, userId, fields);
+    invalidateProfilesCache();
 
     json(res, 200, {
       ok: true,
@@ -292,6 +308,7 @@ export default async function colorfulProfiles(ctx: Context): Promise<void> {
     const ext = { gif: 'gif', png: 'png', jpeg: 'jpg', webp: 'webp' }[info.kind];
     const url = await storeAvatar(avatarStore, userId, file.buffer, ext);
     await upsertProfile(db, userId, { avatar: url, avatar_crop: crop ? JSON.stringify(crop) : null });
+    invalidateProfilesCache();
     json(res, 200, { ok: true, avatarUrl: url, crop });
   }));
 
