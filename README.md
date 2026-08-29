@@ -48,7 +48,7 @@ Recommended order：activate AFTER both（it registers view dirs in activate pha
 cd base && sh scripts/sync-plugins.sh colorful-profiles
 
 # Option 2 — clone into runtime dir（目录名必须等于插件 id）
-git clone https://github.com/Averithen/linearpress-colorful-profiles src/plugins/colorful-profiles
+git clone https://github.com/Evarentha/linearpress-colorful-profiles src/plugins/colorful-profiles
 ```
 
 ## Settings / 设置
@@ -58,7 +58,7 @@ Admin「多彩个人资料」page（needs `colorful-profiles:manage`）：avatar
 ## Local Development / 本地开发：怎么拉 / 怎么改 / 怎么跑
 
 ```bash
-git clone https://github.com/Averithen/linearpress-colorful-profiles LinearPress/Plugins/colorful-profiles
+git clone https://github.com/Evarentha/linearpress-colorful-profiles LinearPress/Plugins/colorful-profiles
 cd LinearPress/base
 npm install && npm run db:init
 sh scripts/sync-plugins.sh colorful-profiles
