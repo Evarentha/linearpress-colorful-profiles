@@ -1,12 +1,30 @@
 {
-  "name": "colorful-profiles",
+  "name": "@evarentha/linearpress-colorful-profiles",
   "version": "1.0.0",
-  "private": true,
-  "description": "LinearPress 多彩个人资料插件：头像(支持 GIF/APNG 与正方形裁剪)、昵称、邮箱重验证、公开资料页与文章/评论头像展示",
+  "private": false,
+  "description": "增强的用户个人资料：GIF/APNG 头像与正方形裁剪、昵称显示、邮箱重验证、公开资料页与文章/评论头像展示。依赖 advanced-comments 与 advanced-user-management。",
   "type": "module",
   "main": "index.ts",
+  "files": [
+    "index.ts",
+    "plugin.json",
+    "src",
+    "views",
+    "public",
+    "README.md",
+    "LICENSE"
+  ],
+  "license": "MIT",
+  "keywords": [
+    "linearpress",
+    "plugin",
+    "colorful-profiles"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "peerDependencies": {
-    "nodemailer": "^6.9.0"
+    "nodemailer": ">=6.0.0"
   },
   "peerDependenciesMeta": {
     "nodemailer": {
