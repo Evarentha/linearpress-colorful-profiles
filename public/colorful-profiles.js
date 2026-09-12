@@ -1,9 +1,20 @@
 /*
- * Author: MoyuZJ
- * Team: LinearTeam
- * Contact: linearteam@foxmail.com
- * Made by MoyuZJ in China with ♥
- * Colorful Profiles —— 用户菜单 / 头像裁剪上传 / 保存确认 / 媒体库选择 / 时间线 lazyload
+ * Colorful Profiles Front-End Script
+ *
+ * User menu, avatar crop and upload, save confirmation, media picker, timeline lazyload.
+ *
+ * Authors:
+ * MoyuZJ <moyuzj@moyuzj.cn> @LinearTeam - Made in China with ♥
+ *
+ * Copyright (C) 2026 Evarentha
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+/**
+ * Colorful Profiles — user menu / avatar crop & upload / save confirmation /
+ * media-library picking / timeline lazyload.
+ *
+ * @since 1.0.0
  */
 (() => {
 
@@ -30,7 +41,9 @@
     if (crop && crop.size > 0) {
       const sx = crop.size, sy = crop.sizeY || crop.size;
       style += 'background-size:' + ((1 / sx) * 100).toFixed(2) + '%;';
-      style += 'background-position:' + ((crop.x / (1 - sx)) * 100).toFixed(2) + '% ' + ((crop.y / (1 - sy)) * 100).toFixed(2) + '%;';
+      // 裁剪框近乎铺满整图时 (1 - sx) 趋于 0，位置计算会除零：退回居中呈现。
+      if (sx >= 0.999 || sy >= 0.999) style += 'background-position:center;';
+      else style += 'background-position:' + ((crop.x / (1 - sx)) * 100).toFixed(2) + '% ' + ((crop.y / (1 - sy)) * 100).toFixed(2) + '%;';
     } else {
       style += 'background-size:cover;background-position:center;';
     }
@@ -85,7 +98,12 @@
 
     fileInput.addEventListener('change', () => {
       let file = fileInput.files && fileInput.files[0];
-      if (!file) return;
+      if (file) handleCandidateFile(file);
+      fileInput.value = '';
+    });
+
+    // 本地选择与媒体库选择共用的“校验 + 裁剪”入口
+    function handleCandidateFile(file) {
       if (allowedTypes.indexOf(file.type) === -1) { setStatus('不支持的图片格式：仅支持 JPG / PNG / GIF / WebP。', false); return; }
       if (file.size / 1024 / 1024 > limitMb) { setStatus('文件不能超过 ' + limitMb + 'MB。', false); return; }
 
@@ -102,8 +120,7 @@
       };
       probe.onerror = () => { setStatus('无法读取图片文件。', false); URL.revokeObjectURL(url); };
       probe.src = url;
-      fileInput.value = '';
-    });
+    }
 
     function openCropper(file, url, imgW, imgH) {
       img.src = url;
@@ -261,6 +278,7 @@
         removeBtn.hidden = false;
         setStatus('新头像已上传。', true);
         hideModal();
+        URL.revokeObjectURL(img.src);
         state = null;
       } catch (err) {
         setStatus(err.message || '上传失败，请重试。', false);
@@ -279,16 +297,17 @@
         setStatus('头像已标记移除，保存后生效。', true);
       });
     }
+
+    return { editFile: handleCandidateFile };
   }
 
   /* ------------------------------------------------------------- 媒体库选择 */
-  function initMediaPicker() {
+  function initMediaPicker(picker) {
     let pickBtn = $('#cf-avatar-pick');
-    if (!pickBtn || !CF.mediaEnabled) return;
+    if (!pickBtn || !CF.mediaEnabled || !picker) return;
     let modal = $('#cf-media-modal');
     let grid = $('#cf-media-grid');
     let cancelBtn = $('#cf-media-cancel');
-    let preview = $('#cf-avatar-preview');
     let limitPx = Number(CF.sizeLimitPx) || 1024;
     let limitMb = Number(CF.sizeLimitMb) || 10;
 
@@ -318,11 +337,12 @@
               }
               $$('.cf-media-item', grid).forEach((x) => { x.classList.remove('selected'); });
               el.classList.add('selected');
-              $('#cf-avatar-hidden').value = item.url;
-              $('#cf-avatar-removed').value = '';
-              renderAvatarInto(preview, item.url, null, 96);
-              $('#cf-avatar-remove').hidden = false;
               modal.hidden = true;
+              // 与本地上传走同一条“校验 + 正方形裁剪 + 上传”链路，而非直接引用媒体库 URL
+              fetch(item.url)
+                .then((r) => { if (!r.ok) throw new Error('http ' + r.status); return r.blob(); })
+                .then((blob) => { picker.editFile(new File([blob], item.original_name || 'avatar', { type: blob.type })); })
+                .catch(() => { alert('无法读取该图片。'); });
             };
             probe.onerror = () => { alert('无法读取该图片。'); };
             probe.src = item.url;
@@ -482,13 +502,15 @@
   function boot() {
     initMenu();
     if ($('#cf-profile-form')) {
-      // 记录当前头像初始字母供移除后兜底
+      // 记录当前头像初始字母供移除后兜底：优先服务端渲染的 data-cf-initial（图片头像时 span 无文本）
       let preview = $('#cf-avatar-preview');
-      if (preview && preview.querySelector('.cf-avatar')) {
-        window.__CF_INITIAL__ = preview.querySelector('.cf-avatar').textContent || '?';
+      if (preview) {
+        window.__CF_INITIAL__ = preview.getAttribute('data-cf-initial')
+          || (preview.querySelector('.cf-avatar') || {}).textContent
+          || '?';
       }
-      initAvatarEditor();
-      initMediaPicker();
+      let avatarEditor = initAvatarEditor();
+      initMediaPicker(avatarEditor);
       initSaveFlow();
     }
     initTimeline();

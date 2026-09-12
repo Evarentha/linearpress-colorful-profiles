@@ -1,9 +1,21 @@
 <!--
-  Author: MoyuZJ
-  Team: LinearTeam
-  Contact: linearteam@foxmail.com
-  Made by MoyuZJ in China with ♥
-  多彩个人资料 —— 公开资料页（需登录）
+  Public Profile Page
+
+  Public profile page for a user (login required).
+
+  Authors:
+  MoyuZJ <moyuzj@moyuzj.cn> @LinearTeam - Made in China with ♥
+
+  Copyright (C) 2026 Evarentha
+  SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
+<!--
+  Colorful Profiles — public profile page (login required). Shows the user's avatar,
+  nickname, username, website, contact info, representative work, Markdown bio and a
+  recent-posts timeline grouped by month with lazy loading.
+
+  @since 1.0.0
 -->
 
 <section class="cf-page cf-profile">
@@ -30,7 +42,7 @@
     <div class="cf-profile-bio"><%- bioHtml %></div>
   <% } %>
 
-  <div class="cf-profile-posts" id="cf-timeline" data-username="<%= profile.username %>" data-page-size="<%= timelinePageSize %>" data-has-more="<%= hasMore ? '1' : '0' %>">
+  <div class="cf-profile-posts" id="cf-timeline" data-username="<%= profile.username %>" data-page-size="<%= timelinePageSize %>">
     <h2>最近文章</h2>
     <div class="cf-tl" id="cf-tl">
       <%
@@ -61,7 +73,3 @@
     <% if (hasMore) { %><button type="button" class="button cf-load-more" id="cf-load-more">加载更多</button><% } %>
   </div>
 </section>
-
-<script>
-window.__CF_TIMELINE__ = { username: "<%= profile.username %>", pageSize: <%= timelinePageSize %> };
-</script>

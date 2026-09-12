@@ -1,13 +1,21 @@
 /*
- * Author: MoyuZJ
- * Team: LinearTeam
- * Contact: linearteam@foxmail.com
- * Made by MoyuZJ in China with ♥
+ * Avatar Validation and Storage Subsystem
+ *
+ * Avatar detection, validation, multipart parsing and disk storage.
+ *
+ * Authors:
+ * MoyuZJ <moyuzj@moyuzj.cn> @LinearTeam - Made in China with ♥
+ *
+ * Copyright (C) 2026 Evarentha
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 /**
- * 头像子系统：magic bytes 检测、动画识别、尺寸/大小校验、multipart 文件解析、
- * 磁盘读写（无损保留原图，动画帧不被破坏；正方形裁剪坐标交由 CSS 呈现）。
+ * Avatar subsystem: magic-byte detection, animation identification, dimension/size validation,
+ * multipart file parsing, and disk read/write (the original image is preserved losslessly so
+ * animated frames are never damaged; square-crop coordinates are rendered via CSS at display time).
+ *
+ * @since 1.0.0
  */
 
 import type { Request } from 'express';

@@ -1,13 +1,23 @@
 /*
- * Author: MoyuZJ
- * Team: LinearTeam
- * Contact: linearteam@foxmail.com
- * Made by MoyuZJ in China with ♥
+ * Minimal Markdown Renderer
+ *
+ * Escapes-first minimal Markdown renderer for profile bios.
+ *
+ * Authors:
+ * MoyuZJ <moyuzj@moyuzj.cn> @LinearTeam - Made in China with ♥
+ *
+ * Copyright (C) 2026 Evarentha
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 /**
- * 极简 Markdown 渲染器（用于个人描述 bio）。
- * 先转义 HTML 再按块处理，避免 XSS；支持标题/粗斜体/行内代码/代码块/链接/列表/段落/换行。
+ * Minimal Markdown renderer (used for profile bios).
+ *
+ * <p>HTML is escaped first and the input is then processed block by block to avoid XSS; supports
+ * headings, bold/italic, inline code, fenced code blocks, links, lists, paragraphs and line
+ * breaks.</p>
+ *
+ * @since 1.0.0
  */
 
 function escapeHtml(value: unknown): string {

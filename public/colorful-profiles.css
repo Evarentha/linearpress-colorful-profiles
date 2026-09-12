@@ -1,9 +1,19 @@
 /*
- * Author: MoyuZJ
- * Team: LinearTeam
- * Contact: linearteam@foxmail.com
- * Made by MoyuZJ in China with ♥
- * Colorful Profiles —— 头像/菜单/资料页/裁剪弹窗样式
+ * Colorful Profiles Stylesheet
+ *
+ * Styles for avatars, the user menu, profile pages and the crop modal.
+ *
+ * Authors:
+ * MoyuZJ <moyuzj@moyuzj.cn> @LinearTeam - Made in China with ♥
+ *
+ * Copyright (C) 2026 Evarentha
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+/*
+ * Colorful Profiles — avatar / menu / profile page / crop modal styles.
+ *
+ * @since 1.0.0
  */
 
 .cf-avatar{display:inline-block;border-radius:50%;overflow:hidden;flex:none;background:linear-gradient(135deg, #f0abfc, #818cf8, #22d3ee);color:#fff;font-weight:700;line-height:1;text-align:center;display:inline-flex;align-items:center;justify-content:center;user-select:none;box-shadow:0 0 0 2px rgba(255, 255, 255, 0.9), 0 2px 8px rgba(0, 0, 0, 0.12);vertical-align:middle}

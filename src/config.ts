@@ -1,16 +1,24 @@
 /*
- * Author: MoyuZJ
- * Team: LinearTeam
- * Contact: linearteam@foxmail.com
- * Made by MoyuZJ in China with ♥
+ * Colorful Profiles Configuration Model
+ *
+ * Configuration model for the Colorful Profiles plugin.
+ *
+ * Authors:
+ * MoyuZJ <moyuzj@moyuzj.cn> @LinearTeam - Made in China with ♥
+ *
+ * Copyright (C) 2026 Evarentha
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 /**
- * 多彩个人资料插件配置模型。
+ * Configuration model for the Colorful Profiles plugin.
  *
- * 配置整体以 JSON 保存在插件注册表（ctx.plugins.getConfig/setConfig）。
- * 本模块不依赖 Base 内部实现，只依赖 Cordis Context 暴露的 plugins 服务，
- * 支持默认值 + 浅层合并，保证字段缺失时行为可预期。
+ * <p>The whole configuration is persisted as JSON in the plugin registry
+ * (ctx.plugins.getConfig/setConfig). This module does not depend on Base internals, only on the
+ * plugins service exposed by the Cordis Context, and supports defaults + shallow merging so
+ * behavior stays predictable when fields are missing.</p>
+ *
+ * @since 1.0.0
  */
 
 /** 插件注册表配置服务的最小接口（由 ctx.plugins 满足）。 */

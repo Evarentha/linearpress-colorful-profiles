@@ -1,16 +1,27 @@
 /*
- * Author: MoyuZJ
- * Team: LinearTeam
- * Contact: linearteam@foxmail.com
- * Made by MoyuZJ in China with ♥
+ * Colorful Profiles Data Layer
+ *
+ * SQLite data layer for profile fields and email-verification state.
+ *
+ * Authors:
+ * MoyuZJ <moyuzj@moyuzj.cn> @LinearTeam - Made in China with ♥
+ *
+ * Copyright (C) 2026 Evarentha
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 /**
- * 多彩个人资料数据层。
+ * Data layer for Colorful Profiles.
  *
- * - colorful_profiles：profile 扩展字段（昵称/头像/网站/描述/联系方式/代表作）。
- * - aum_users：复用高级用户管理的邮箱验证状态表（本插件仅确保其存在并写入
- *   verified / token，便于「改邮箱后重走邮件验证」；token 由 AUM 的 /verify 消费）。
+ * <ul>
+ * <li>colorful_profiles: profile extension fields (nickname / avatar / website / description /
+ * contact info / representative work).</li>
+ * <li>aum_users: reuses the advanced-user-management email-verification state table (this plugin
+ * only ensures the table exists and writes verified / token so an email change re-enters mail
+ * verification; the token is consumed by AUM's /verify route).</li>
+ * </ul>
+ *
+ * @since 1.0.0
  */
 
 /** databaseService 所需的最小接口（由 ctx.databaseService 满足）。 */

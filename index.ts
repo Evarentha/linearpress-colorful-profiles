@@ -1,27 +1,39 @@
 /*
- * Author: MoyuZJ
- * Team: LinearTeam
- * Contact: linearteam@foxmail.com
- * Made by MoyuZJ in China with ♥
+ * Colorful Profiles Plugin Entry
+ *
+ * Cordis-native plugin entry wiring routes, views and profile features for LinearPress.
+ *
+ * Authors:
+ * MoyuZJ <moyuzj@moyuzj.cn> @LinearTeam - Made in China with ♥
+ *
+ * Copyright (C) 2026 Evarentha
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 /**
- * 多彩个人资料插件入口（Cordis 原生插件，export default 即 activate 阶段）。
+ * Colorful Profiles plugin entry (Cordis-native plugin; the default export is the activate phase).
  *
- * 功能：
- *  1. 右侧用户菜单：头像+昵称/@用户名/邮箱，编辑个人资料 + 其他插件项（含 AUM 个人设置）。
- *  2. 资料编辑页 /profile/edit：头像(文件上传+正方形裁剪，支持 GIF/APNG)、昵称、邮箱、网站、
- *     描述(Markdown)、联系方式、代表作；保存二次确认 + 改邮箱侵入式提示。
- *  3. 邮箱重验证：接入 advanced-user-management，改邮箱后回到未验证状态，验证前无法发文/评论。
- *  4. 公开资料页 /user/:username：昵称、用户名、邮箱、头像、网站、描述、代表作、最近文章时间线
- *     （按月分组，lazyload +N）。
- *  5. 头像展示：文章作者左侧、评论作者左侧、右上角名称左侧与展开菜单；媒体库选择头像（可选）。
+ * Features:
+ *  1. User menu on the right: avatar + nickname / @username / email, edit-profile entry and other
+ *     plugin items (including AUM personal settings).
+ *  2. Profile edit page /profile/edit: avatar (file upload + square cropping, GIF/APNG supported),
+ *     nickname, email, website, description (Markdown), contact info and representative work;
+ *     double confirmation on save + intrusive prompt when changing email.
+ *  3. Email re-verification: integrates advanced-user-management; after an email change the
+ *     account returns to unverified state and cannot post articles or comments until verified.
+ *  4. Public profile page /user/:username: nickname, username, email, avatar, website,
+ *     description, representative work and a recent-posts timeline (grouped by month, +N lazyload).
+ *  5. Avatar display: beside article authors and comment authors, next to the top-right name and
+ *     in its expanded menu; optional avatar picking from the media library.
  *
- * 依赖：advanced-comments（评论视图/评论表单）、advanced-user-management（邮箱验证）。
- * 加载顺序晚于二者（后加载者视图优先）。
+ * Dependencies: advanced-comments (comment views / comment form) and advanced-user-management
+ * (email verification). Loads after both (the later-loaded plugin's views take priority).
+ *
+ * @since 1.0.0
  */
 
 import { randomUUID } from 'node:crypto';
+import fs from 'fs-extra';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Context } from 'cordis';
@@ -36,7 +48,7 @@ import {
   ensureSchema, getProfile, getProfileView, getVerifyRow, loadProfilesMap,
   markEmailPending, updateUserEmail, upsertProfile
 } from './src/store.js';
-import { avatarDir, parseCrop, parseMultipart, readRawBody, resolveAvatarFile, storeAvatar, validateAvatar, AvatarStore } from './src/avatar.js';
+import { avatarDir, detectImage, parseCrop, parseMultipart, readRawBody, resolveAvatarFile, storeAvatar, validateAvatar, AvatarStore } from './src/avatar.js';
 import { renderMarkdown } from './src/markdown.js';
 
 const PLUGIN_ID = 'colorful-profiles';
@@ -166,7 +178,9 @@ export default async function colorfulProfiles(ctx: Context): Promise<void> {
       if (crop) {
         const sx = crop.size;
         const sy = crop.sizeY || crop.size;
-        style += `background-size:${((1 / sx) * 100).toFixed(2)}%;background-position:${((crop.x / (1 - sx)) * 100).toFixed(2)}% ${((crop.y / (1 - sy)) * 100).toFixed(2)}%;`;
+        // 裁剪框近乎铺满整图时 (1 - sx) 趋于 0，位置计算会除零：退回居中呈现。
+        style += `background-size:${((1 / sx) * 100).toFixed(2)}%;`;
+        style += sx >= 0.999 || sy >= 0.999 ? 'background-position:center;' : `background-position:${((crop.x / (1 - sx)) * 100).toFixed(2)}% ${((crop.y / (1 - sy)) * 100).toFixed(2)}%;`;
       } else {
         style += 'background-size:cover;background-position:center;';
       }
@@ -274,8 +288,26 @@ export default async function colorfulProfiles(ctx: Context): Promise<void> {
     let avatar = text(body.avatar);
     let avatarCrop: string | null = null;
     if (avatar && !avatar.startsWith(AVATAR_STATIC_PREFIX)) {
-      // 确认是合法的媒体库或站内图片路径
-      if (!/^\/(media-library\/files|uploads|plugins)\//.test(avatar)) avatar = '';
+      // 确认是合法的媒体库或站内图片路径；含路径回溯一律视为非法
+      if (!/^\/(media-library\/files|uploads|plugins)\//.test(avatar) || avatar.includes('..')) avatar = '';
+    }
+    if (avatar && !avatar.startsWith(AVATAR_STATIC_PREFIX)) {
+      // 直接引用站内 URL 的头像（旧客户端/手工提交）：按同一动画策略校验源文件
+      const relative = avatar.replace(/^\/(media-library\/files|uploads)\//, '');
+      const pluginMatch = avatar.match(/^\/plugins\/([^/]+)\/(.+)$/);
+      const localPath = relative !== avatar
+        ? path.join(avatarStore.rootDir, relative)
+        : pluginMatch
+          ? path.join(process.cwd(), 'src', 'plugins', pluginMatch[1], 'public', pluginMatch[2])
+          : null;
+      if (localPath) {
+        try {
+          const info = detectImage(await fs.readFile(localPath));
+          if (info?.animated && ((info.kind === 'gif' && !config.allowGif) || (info.kind === 'png' && !config.allowApng))) {
+            return json(res, 400, { ok: false, message: '站点设置不允许使用动态头像，请更换静态图片。' });
+          }
+        } catch { /* 源文件不可读时交由后续空值回退 */ }
+      }
     }
     // 移除头像
     if (text(body.avatar_removed) === '1') { avatar = ''; avatarCrop = ''; }

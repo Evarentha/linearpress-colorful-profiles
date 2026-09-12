@@ -1,17 +1,26 @@
 /*
- * Author: MoyuZJ
- * Team: LinearTeam
- * Contact: linearteam@foxmail.com
- * Made by MoyuZJ in China with ♥
+ * Email Re-Verification Mailer
+ *
+ * Sends re-verification mail after an email change, reusing AUM's SMTP setup.
+ *
+ * Authors:
+ * MoyuZJ <moyuzj@moyuzj.cn> @LinearTeam - Made in China with ♥
+ *
+ * Copyright (C) 2026 Evarentha
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
 /**
- * 邮箱变更重验证邮件发送。
+ * Sends the re-verification email after an email change.
  *
- * 复用高级用户管理(AUM)的 SMTP 配置与模板：改邮箱后给新邮箱发送激活链接，
- * token 写入 aum_users 表，由 AUM 已有的 /verify 路由负责校验与标记已验证。
- * nodemailer 通过 createRequire 动态加载（本插件目录或站点根目录安装后即用），
- * 未安装/未配置时抛出带中文提示的错误，不携带硬依赖。
+ * <p>Reuses the advanced-user-management (AUM) SMTP configuration and template: once the email is
+ * changed, an activation link is sent to the new address; the token is written to the aum_users
+ * table and validated by AUM's existing /verify route, which then marks the account verified.
+ * nodemailer is loaded dynamically via createRequire (usable as soon as it is installed in the
+ * plugin directory or the site root); when it is missing or unconfigured, an error with a
+ * user-facing message is thrown instead of imposing a hard dependency.</p>
+ *
+ * @since 1.0.0
  */
 
 import { createRequire } from 'node:module';

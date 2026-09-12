@@ -1,10 +1,21 @@
 <!--
-  Author: MoyuZJ
-  Team: LinearTeam
-  Contact: linearteam@foxmail.com
-  Made by MoyuZJ in China with ♥
-  Colorful Profiles —— 覆盖文章阅读页：作者头像、评论者头像与资料链接；
-  保留高级评论（advanced-comments）的 Markdown 评论、IP 归属地、限频表单与表情面板。
+  Article Reading Page Override
+
+  Article reading page override with author and commenter avatars.
+
+  Authors:
+  MoyuZJ <moyuzj@moyuzj.cn> @LinearTeam - Made in China with ♥
+
+  Copyright (C) 2026 Evarentha
+  SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
+<!--
+  Colorful Profiles — overrides the article reading page: author avatar, commenter avatars
+  and profile links; retains advanced-comments' Markdown comments, IP geolocation,
+  rate-limited form and emoji panel.
+
+  @since 1.0.0
 -->
 
 <article class="article"><p class="meta"><%= formatDate(post.created_at) %> / <%= post.views %> VIEWS</p><h1><%= post.title %></h1>
@@ -25,7 +36,7 @@
           <% if (comment.user_id == null && meta) { %><span class="ac-ip">IP <%= meta.ip %> · <%= meta.location %></span><% } %>
         </div>
       </div>
-      <div class="ac-comment-body"><%- (ac && ac.renderComment) ? ac.renderComment(comment.content) : comment.content %></div>
+      <div class="ac-comment-body"><% if (ac && ac.renderComment) { %><%- ac.renderComment(comment.content) %><% } else { %><%= comment.content %><% } %></div>
     </div>
   <% }) %>
 
@@ -33,7 +44,7 @@
     <% if (currentUser) { %>
       <p class="ac-as">以 <strong><%= cfDisplayName(currentUser.id) %></strong> 身份评论。</p>
     <% } else { %>
-      <input name="guest_name" placeholder="姓名（必填）" class="ac-name" required>
+      <input name="guest_name" placeholder="<%= (ac && ac.config && ac.config.requireName) ? '姓名（必填）' : '姓名' %>" class="ac-name" <%= (ac && ac.config && ac.config.requireName) ? 'required' : '' %>>
       <input name="guest_email" type="email" placeholder="邮箱（选填）" class="ac-email">
     <% } %>
     <div class="ac-editor">

@@ -1,9 +1,21 @@
 <!--
-  Author: MoyuZJ
-  Team: LinearTeam
-  Contact: linearteam@foxmail.com
-  Made by MoyuZJ in China with ♥
-  多彩个人资料 —— 资料编辑页
+  Profile Edit Page
+
+  Self-service profile editing form for logged-in users.
+
+  Authors:
+  MoyuZJ <moyuzj@moyuzj.cn> @LinearTeam - Made in China with ♥
+
+  Copyright (C) 2026 Evarentha
+  SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
+<!--
+  Colorful Profiles — profile edit page. Upload and crop an avatar (with media-library
+  picking), edit nickname, email, website, Markdown description, contact info and
+  representative work, with save confirmation and email-change warnings.
+
+  @since 1.0.0
 -->
 
 <section class="cf-page">
@@ -19,7 +31,7 @@
     <div class="cf-field cf-field-avatar">
       <label class="cf-label">头像</label>
       <div class="cf-avatar-wrap">
-        <div class="cf-avatar-preview" id="cf-avatar-preview">
+        <div class="cf-avatar-preview" id="cf-avatar-preview" data-cf-initial="<%= (profile.nickname || user.username || '?').trim().charAt(0).toUpperCase() || '?' %>">
           <%- cfAvatarHtml(currentUser.id, 96, 'cf-avatar-preview-img') %>
         </div>
         <button type="button" class="cf-avatar-edit" id="cf-avatar-edit" title="编辑头像" aria-label="编辑头像"><span>✎</span></button>
