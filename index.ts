@@ -5,6 +5,7 @@
  *
  * Authors:
  * MoyuZJ <moyuzj@moyuzj.cn> @LinearTeam - Made in China with ♥
+ * worryzu <worryzu@gmail.com> @LinearTeam
  *
  * Copyright (C) 2026 Evarentha
  * SPDX-License-Identifier: GPL-3.0-or-later
@@ -39,7 +40,7 @@ import { fileURLToPath } from 'node:url';
 import { Context } from 'cordis';
 import type { Request, RequestHandler, Response } from 'express';
 import { postUrl } from '../../core/permalinks.js';
-import { getBaseConfig } from '../../services/config.service.js';
+import { defaultViewFallback } from './src/default-view.js';
 import { loadConfig, saveConfig, type CpConfig, type PluginConfigService } from './src/config.js';
 import type { EmailVerifyLike } from './src/email.js';
 import { buildVerificationMail, sendVerificationMail } from './src/email.js';
@@ -76,8 +77,8 @@ async function isEnabled(ctx: Context, id: string): Promise<boolean> {
 }
 
 /** 读取高级用户管理的邮件验证配置（未安装/未启用返回 null）。 */
-function aumEmailVerify(ctx: Context): EmailVerifyLike | null {
-  const cfg = (ctx.plugins as unknown as PluginConfigService).getConfig<Record<string, unknown>>('advanced-user-management') ?? {};
+async function aumEmailVerify(ctx: Context): Promise<EmailVerifyLike | null> {
+  const cfg = await (ctx.plugins as unknown as PluginConfigService).getConfig<Record<string, unknown>>('advanced-user-management') ?? {};
   const ev = (cfg.emailVerify && typeof cfg.emailVerify === 'object' ? cfg.emailVerify : {}) as Record<string, unknown>;
   if (!ev.enable) return null;
   const smtp = (ev.smtp && typeof ev.smtp === 'object' ? ev.smtp : {}) as Record<string, unknown>;
@@ -101,7 +102,7 @@ export default async function colorfulProfiles(ctx: Context): Promise<void> {
   const { web, hooks, admin } = ctx.linearpress;
   const db = ctx.databaseService as unknown as Db;
 
-  let config: CpConfig = loadConfig(ctx.plugins);
+  let config: CpConfig = await loadConfig(ctx.plugins);
   await ensureSchema(db);
   await ctx.permissions.register(MANAGE_PERMISSION, '管理多彩个人资料');
 
@@ -114,9 +115,9 @@ export default async function colorfulProfiles(ctx: Context): Promise<void> {
     console.warn(`[${PLUGIN_ID}] 依赖插件未全部启用（需要 advanced-comments + advanced-user-management），部分功能降级。`);
   }
 
-  // activate 阶段注册视图目录：与 advanced-comments 相同的机制，确保覆盖的
-  // layouts/web.ejs / web/post.ejs 在倒序解析时拥有最高优先级。
+  // Theme views stay authoritative; only Base's default views use our fallback.
   web.viewDir(path.join(PLUGIN_DIR, 'views'));
+  web.middleware(defaultViewFallback());
 
   const avatarStore: AvatarStore = {
     rootDir: path.join(process.cwd(), 'uploads'),
@@ -150,6 +151,8 @@ export default async function colorfulProfiles(ctx: Context): Promise<void> {
   };
 
   hooks.on('site:locals', async (locals: Record<string, unknown>) => {
+    config = await loadConfig(ctx.plugins);
+    avatarStore.subDir = config.avatarDir;
     const profiles = await profilesMap();
     const parseCropJson = (raw: string | null): { x: number; y: number; size: number; sizeY?: number } | null => {
       if (!raw) return null;
@@ -202,12 +205,14 @@ export default async function colorfulProfiles(ctx: Context): Promise<void> {
     return {
       ...locals,
       colorfulUsers,
+      acCommentError: locals.acCommentError ?? '',
+      colorfulProfilesPostView: path.join(PLUGIN_DIR, 'views/cp-post.ejs'),
       cfDisplayName,
       cfAvatarHtml,
       cfProfileHref,
       cpUserMenuItems: extra,
       colorfulProfilesReady: true,
-      cfEmailVerifyEnabled: aumEnabled ? Boolean(aumEmailVerify(ctx)) : false
+      cfEmailVerifyEnabled: aumEnabled ? Boolean(await aumEmailVerify(ctx)) : false
     };
   });
 
@@ -217,7 +222,7 @@ export default async function colorfulProfiles(ctx: Context): Promise<void> {
     if (!user) return res.status(404).render('error', { title: '用户不存在', message: '当前登录用户不存在。' });
     const profile = (await getProfile(db, user.id)) as (Profile & { email?: string }) | undefined;
     const verify = await getVerifyRow(db, user.id);
-    const ev = aumEmailVerify(ctx);
+    const ev = aumEnabled ? await aumEmailVerify(ctx) : null;
     res.render('profile-edit', {
       title: '编辑个人资料',
       user: { ...user, email: profile?.email ?? user.email },
@@ -260,15 +265,16 @@ export default async function colorfulProfiles(ctx: Context): Promise<void> {
     if (newEmailRaw !== (user.email ?? '')) {
       emailChanged = true;
       const sanitized = newEmailRaw || null;
-      const ev = aumEmailVerify(ctx);
+      const ev = aumEnabled ? await aumEmailVerify(ctx) : null;
       if (ev) {
         // 先发验证邮件，发送成功后再提交变更，避免用户被置于无法验证的状态。
         const token = randomUUID().replace(/-/g, '');
         // 优先使用站点配置主域名，防止 Host 头投毒污染激活链接。
-        const primary = text(getBaseConfig().primaryDomain ?? '').replace(/^https?:\/\//i, '').replace(/\/+$/, '');
+        const site = await ctx.config.get();
+        const primary = text(site.primaryDomain ?? '').replace(/^https?:\/\//i, '').replace(/\/+$/, '');
         const origin = primary ? `${req.protocol}://${primary}` : `${req.protocol}://${req.get('host')}`;
         const mail = buildVerificationMail(ev, {
-          siteName: getBaseConfig().siteName || 'LinearPress',
+          siteName: site.siteName || 'LinearPress',
           username: user.username,
           verifyUrl: `${origin}/verify?token=${token}`,
           siteUrl: origin
@@ -363,7 +369,7 @@ export default async function colorfulProfiles(ctx: Context): Promise<void> {
     const profileView = await getProfileView(db, user.id);
     const merged = { ...(profileView ?? { user_id: user.id, username, email: user.email, nickname: null, avatar: null, avatar_crop: null, website: null, bio: null, contact: null, representative: null, updated_at: null }) };
     const pageSize = config.timelinePageSize;
-    const posts = await listUserPosts(db, user.id, 0, pageSize, getBaseConfig());
+    const posts = await listUserPosts(db, user.id, 0, pageSize, await ctx.config.get());
     res.render('profile-view', {
       title: `${merged.nickname || merged.username} 的个人资料`,
       user,
@@ -381,7 +387,7 @@ export default async function colorfulProfiles(ctx: Context): Promise<void> {
     if (!user) return json(res, 404, { ok: false, message: '用户不存在' });
     const offset = Math.max(0, Number(req.query.offset) || 0);
     const limit = Math.max(1, Math.min(50, Number(req.query.limit) || config.timelinePageSize));
-    const result = await listUserPosts(db, user.id, offset, limit, getBaseConfig());
+    const result = await listUserPosts(db, user.id, offset, limit, await ctx.config.get());
     json(res, 200, { ok: true, posts: result.items, hasMore: result.hasMore, nextOffset: offset + limit });
   }));
 
@@ -400,7 +406,7 @@ export default async function colorfulProfiles(ctx: Context): Promise<void> {
     try {
       const { parseSettingsForm } = await import('./src/config.js');
       config = parseSettingsForm((req.body ?? {}) as Record<string, unknown>);
-      saveConfig(ctx.plugins, config);
+      await saveConfig(ctx.plugins, config);
       res.redirect(`${SETTINGS_URL}?notice=saved`);
     } catch (error) {
       res.status(400).render('admin/cp-settings', { title: '多彩个人资料 · 设置', config, notice: `保存失败：${messageOf(error)}` });
@@ -414,7 +420,7 @@ export default async function colorfulProfiles(ctx: Context): Promise<void> {
   // ------------------------------------------------------------ 未验证越权防护：发文章
   hooks.on('post:beforeSave', async (payload: Record<string, unknown>) => {
     if (!aumEnabled) return payload;
-    const ev = aumEmailVerify(ctx);
+    const ev = await aumEmailVerify(ctx);
     if (!ev) return payload;
     // 仅拦截新建文章（无 id）；已发布/编辑不受影响。
     if (payload.id || !payload.author_id) return payload;

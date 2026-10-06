@@ -1,0 +1,21 @@
+<!--
+  LinearPress Cp Post
+
+  Renders the cp post template for LinearPress.
+
+  Authors:
+  MoyuZJ <moyuzj@moyuzj.cn> @LinearTeam - Made in China with ♥
+  worryzu <worryzu@gmail.com> @LinearTeam
+
+  Copyright (C) 2026 Evarentha
+  SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
+<article class="article"><p class="meta"><%= formatDate(post.created_at) %> / <%= post.views %> VIEWS</p><h1><%= post.title %></h1>
+<% var cpAuthor = colorfulUsers && colorfulUsers[post.author_id]; %><div class="cf-post-author"><%- cfAvatarHtml(post.author_id, 46, 'cf-author-avatar') %><div class="cf-author-meta"><% if (currentUser && cpAuthor && cfProfileHref(post.author_id)) { %><a href="<%= cfProfileHref(post.author_id) %>" class="cf-author-name"><%= cfDisplayName(post.author_id) %></a><% } else { %><span class="cf-author-name"><%= cfDisplayName(post.author_id) %></span><% } %><span class="cf-author-sub"><%= formatDate(post.created_at) %> · <%= post.views %> VIEWS</span></div></div>
+<div class="article-body"><%- html %></div></article>
+<% if (typeof advancedCommentsPartial === 'string') { %>
+<%- include(advancedCommentsPartial) %>
+<% } else { %>
+<%- include('partials/profile-comments') %>
+<% } %>

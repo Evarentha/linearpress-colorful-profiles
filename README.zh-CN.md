@@ -6,7 +6,7 @@
 
 `colorful-profiles` 是一个 LinearPress 插件，全方位增强用户资料：GIF/APNG 动图头像、全站昵称展示、强制重新验证的邮箱变更，以及附带按月文章时间线的用户资料页。
 
-本插件依赖 `advanced-comments` 与 `advanced-user-management`，且必须排在这两者之后加载。任一依赖缺失时，插件将记录警告并降级运行：缺少 advanced-comments 时文章页失去增强评论区；缺少 advanced-user-management 时，邮箱变更不再强制重新验证。
+本插件可独立使用；`advanced-comments` 与 `advanced-user-management` 是可选增强插件。任一依赖缺失时，插件将记录警告并降级运行：缺少 advanced-comments 时文章页失去增强评论区；缺少 advanced-user-management 时，邮箱变更不再强制重新验证。
 
 ## 安装
 
@@ -14,7 +14,7 @@
 git clone https://github.com/Evarentha/linearpress-colorful-profiles.git src/plugins/colorful-profiles
 ```
 
-目录名必须与插件 id 一致，安装后需重启 LinearPress。也可以在 `base` 检出中执行 `sh scripts/sync-plugins.sh colorful-profiles`，或在后台插件页上传 ZIP、填写 npm 包名。请确保两个依赖插件已启用且排序在前：视图优先级跟随加载顺序，本插件的文章视图需在 advanced-comments 的评论区之上叠加头像。
+目录名必须与插件 id 一致，安装后需重启 LinearPress。也可以在 `base` 检出中执行 `sh scripts/sync-plugins.sh colorful-profiles`，或在后台插件页上传 ZIP、填写 npm 包名。本插件仅增强 Base 默认文章/布局，不抢占主题模板；启用 advanced-comments 时复用其独立评论 partial 并添加头像，缺失时使用可独立渲染的基础评论表单。
 
 ## 头像
 
@@ -32,7 +32,7 @@ hooks.on('profile:userMenu', (items) => [...items, { title: '我的收藏', link
 
 ## 设置与数据
 
-设置位于 `/admin/colorful-profiles/settings`：两个头像上限、GIF/APNG 开关、时间线每批加载数量、头像子目录（默认 `avatars`，即 `./uploads/avatars/`）。配置以 JSON 形式存储于插件注册表，键为 `colorful-profiles`；`colorful-profiles:manage` 权限守护设置页，资料编辑、头像上传与公开资料页仅需登录。
+设置位于 `/admin/colorful-profiles/settings`：两个头像上限、GIF/APNG 开关、时间线每批加载数量、头像子目录（默认 `avatars`，即 `./uploads/avatars/`）。配置以 JSON 形式存储于插件注册表，键为 `colorful-profiles`，通用 JSON 保存后下次请求即生效；`colorful-profiles:manage` 权限守护设置页，资料编辑、头像上传与公开资料页仅需登录。
 
 业务库中有两张表：`colorful_profiles`（昵称、头像与裁剪参数、网站、描述、联系方式、代表作）与 `aum_users`（验证状态；若 advanced-user-management 尚未创建则由本插件创建，双方共用）。`post:beforeSave` Hook 同时拦截未验证用户发布新文章，与 AUM 的评论拦截形成互补。
 

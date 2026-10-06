@@ -6,7 +6,7 @@
 
 `colorful-profiles` is a plugin for LinearPress that enriches user profiles: animated GIF and APNG avatars, nicknames shown across the site, email changes that force re-verification, and a per-user profile page with a monthly post timeline.
 
-It requires `advanced-comments` and `advanced-user-management`, and it must load after both. If either is missing the plugin logs a warning and degrades: without advanced-comments the post page loses the enhanced comment area, and without advanced-user-management email changes stop forcing re-verification.
+It works independently; `advanced-comments` and `advanced-user-management` are optional enhancements. If either is missing the plugin logs a warning and degrades: without advanced-comments the post page loses the enhanced comment area, and without advanced-user-management email changes stop forcing re-verification.
 
 ## Install
 
@@ -14,7 +14,7 @@ It requires `advanced-comments` and `advanced-user-management`, and it must load
 git clone https://github.com/Evarentha/linearpress-colorful-profiles.git src/plugins/colorful-profiles
 ```
 
-The directory name must equal the plugin id. Restart afterwards, or sync from the `base` checkout (`sh scripts/sync-plugins.sh colorful-profiles`), or upload the ZIP / npm name from the admin Plugins page. Make sure the two required plugins are enabled and ordered before this one; view priority follows load order, and this plugin's post view keeps advanced-comments' comment area while adding avatars.
+The directory name must equal the plugin id. Restart afterwards, or sync from the `base` checkout (`sh scripts/sync-plugins.sh colorful-profiles`), or upload the ZIP / npm name from the admin Plugins page. Only Base's default post/layout use profile fallbacks; theme templates retain ownership. When Advanced Comments is present its independent partial adds avatars; otherwise a standalone basic comment form is rendered.
 
 ## Avatars
 
@@ -32,7 +32,7 @@ hooks.on('profile:userMenu', (items) => [...items, { title: 'My favorites', link
 
 ## Settings and data
 
-Settings live at `/admin/colorful-profiles/settings`: the two avatar limits, GIF and APNG toggles, timeline page size, and the avatar subdirectory (default `avatars`, i.e. `./uploads/avatars/`). Configuration is stored as JSON in the plugin registry under `colorful-profiles`; `colorful-profiles:manage` guards the settings page, while the profile editor, avatar upload, and the public profile page only require being logged in.
+Settings live at `/admin/colorful-profiles/settings`: the two avatar limits, GIF and APNG toggles, timeline page size, and the avatar subdirectory (default `avatars`, i.e. `./uploads/avatars/`). Configuration is stored as JSON in the plugin registry under `colorful-profiles`, with generic JSON updates taking effect on the next request; `colorful-profiles:manage` guards the settings page, while the profile editor, avatar upload, and the public profile page only require being logged in.
 
 Two tables in the business database: `colorful_profiles` (nickname, avatar and crop parameters, website, description, contact, representative works) and `aum_users` (verification state, created here if advanced-user-management has not created it, and shared with it). A `post:beforeSave` hook also blocks unverified users from publishing new posts, which complements AUM's block on commenting.
 

@@ -5,6 +5,7 @@
  *
  * Authors:
  * MoyuZJ <moyuzj@moyuzj.cn> @LinearTeam - Made in China with ♥
+ * worryzu <worryzu@gmail.com> @LinearTeam
  *
  * Copyright (C) 2026 Evarentha
  * SPDX-License-Identifier: GPL-3.0-or-later
@@ -23,8 +24,8 @@
 
 /** 插件注册表配置服务的最小接口（由 ctx.plugins 满足）。 */
 export interface PluginConfigService {
-  getConfig<T = unknown>(id: string): T | null;
-  setConfig(id: string, config: unknown): void;
+  getConfig<T = unknown>(id: string): T | null | Promise<T | null>;
+  setConfig(id: string, config: unknown): void | Promise<void>;
 }
 
 export interface CpConfig {
@@ -80,12 +81,12 @@ export function normalizeConfig(raw: unknown): CpConfig {
   };
 }
 
-export function loadConfig(plugins: PluginConfigService): CpConfig {
-  return normalizeConfig(plugins.getConfig<unknown>('colorful-profiles'));
+export async function loadConfig(plugins: PluginConfigService): Promise<CpConfig> {
+  return normalizeConfig(await plugins.getConfig<unknown>('colorful-profiles'));
 }
 
-export function saveConfig(plugins: PluginConfigService, config: CpConfig): void {
-  plugins.setConfig('colorful-profiles', config);
+export async function saveConfig(plugins: PluginConfigService, config: CpConfig): Promise<void> {
+  await plugins.setConfig('colorful-profiles', config);
 }
 
 /** 从设置页表单构建配置（checkbox 为 on/undefined，数字为空回退默认）。 */

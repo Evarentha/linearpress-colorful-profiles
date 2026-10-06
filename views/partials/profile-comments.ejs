@@ -1,0 +1,27 @@
+<!--
+  LinearPress Profile Comments
+
+  Renders the profile comments template for LinearPress.
+
+  Authors:
+  MoyuZJ <moyuzj@moyuzj.cn> @LinearTeam - Made in China with ♥
+  worryzu <worryzu@gmail.com> @LinearTeam
+
+  Copyright (C) 2026 Evarentha
+  SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
+<!-- Standalone profiles: no advanced-comments locals or assets required. -->
+<section class="comments">
+<h2>评论</h2>
+<% if (typeof acCommentError !== 'undefined' && acCommentError) { %><p class="ac-error"><%= acCommentError %></p><% } %>
+<% if (typeof notice !== 'undefined' && notice) { %><p class="notice">评论已提交，等待审核。</p><% } %>
+<% (typeof comments !== 'undefined' ? comments : []).filter(c => !c.status || c.status === 'approved').forEach(comment => { %>
+<div class="comment"><% if (comment.user_id) { %><%- cfAvatarHtml(comment.user_id, 38, 'cf-comment-avatar') %><% } %><strong><%= comment.guest_name || (comment.user_id ? cfDisplayName(comment.user_id) : '访客') %></strong><p><%= comment.content %></p></div>
+<% }) %>
+<form method="post" action="<%= postUrl(post) %>/comments">
+<% if (!currentUser) { %><input name="guest_name" placeholder="姓名"><input name="guest_email" type="email" placeholder="邮箱（选填）"><% } %>
+<textarea name="content" required placeholder="写下你的评论"></textarea>
+<% if (typeof acCommentFormExtraHtml === 'string') { %><%- acCommentFormExtraHtml %><% } %>
+<button class="button" type="submit">提交评论</button></form>
+</section>

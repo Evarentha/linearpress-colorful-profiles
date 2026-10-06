@@ -1,3 +1,16 @@
+/*
+ * LinearPress Cordis.d
+ *
+ * Implements the cordis.d module for LinearPress.
+ *
+ * Authors:
+ * MoyuZJ <moyuzj@moyuzj.cn> @LinearTeam - Made in China with ♥
+ * worryzu <worryzu@gmail.com> @LinearTeam
+ *
+ * Copyright (C) 2026 Evarentha
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
 import type { RequestHandler } from 'express';
 
 declare module 'cordis' {
