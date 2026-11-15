@@ -1,0 +1,40 @@
+<%#
+  Colorful profiles · public profile page.
+
+  Authors:
+  MoyuZJ <moyuzj@evarentha.com> @LinearTeam - Made in China with ♥
+  worryzu <worryzu@evarentha.com> @LinearTeam
+
+  Copyright (C) 2026 Evarentha
+  SPDX-License-Identifier: GPL-3.0-or-later
+%><div class="wrap wrap-read" data-lp-plugin="colorful-profiles">
+  <header class="cp-hero">
+    <%- avatar(profileUser, 88) %>
+    <div class="cp-hero-text">
+      <h1><%= displayName(profileUser) %></h1>
+      <p class="muted">@<%= profileUser.username %> · <%= formatDate(profileUser.created_at, { time: false }) %> 加入</p>
+      <ul class="cp-stats"><li><strong class="num"><%= totalPosts %></strong> 篇文章</li><li><strong class="num"><%= comments %></strong> 条评论</li></ul>
+    </div>
+    <% if (isSelf) { %><a class="btn btn-sm cp-edit" href="/account/profile">编辑资料</a><% } %>
+  </header>
+
+  <% if (bioHtml || website || profile.contact || profile.representative || (profile.show_email && profileUser.email)) { %>
+  <section class="cp-about" aria-label="简介">
+    <% if (bioHtml) { %><div class="prose cp-bio"><%- bioHtml %></div><% } %>
+    <dl class="cp-facts">
+      <% if (website) { %><dt>网站</dt><dd><a href="<%= website.href %>" rel="nofollow ugc noopener" target="_blank"><%= website.label %></a></dd><% } %>
+      <% if (profile.representative) { %><dt>代表作</dt><dd><%= profile.representative %></dd><% } %>
+      <% if (profile.contact) { %><dt>联系方式</dt><dd><%= profile.contact %></dd><% } %>
+      <% if (profile.show_email && profileUser.email) { %><dt>邮箱</dt><dd><a href="mailto:<%= profileUser.email %>"><%= profileUser.email %></a></dd><% } %>
+    </dl>
+  </section>
+  <% } %>
+
+  <section class="home-section" aria-labelledby="cp-posts">
+    <div class="section-head"><h2 id="cp-posts">文章</h2></div>
+    <% if (posts.length) { %>
+    <ul class="post-list"><% for (const post of posts) { %><%- include('partials/post-item', { post }) %><% } %></ul>
+    <div class="list-foot"><%- include('partials/pagination', { pager }) %></div>
+    <% } else { %><p class="muted">还没有发表文章。</p><% } %>
+  </section>
+</div>

@@ -1,0 +1,23 @@
+<%#
+  Colorful profiles · admin settings.
+
+  Authors:
+  MoyuZJ <moyuzj@evarentha.com> @LinearTeam - Made in China with ♥
+  worryzu <worryzu@evarentha.com> @LinearTeam
+
+  Copyright (C) 2026 Evarentha
+  SPDX-License-Identifier: GPL-3.0-or-later
+%><div class="stack" data-lp-plugin="colorful-profiles">
+  <div class="page-header"><div><h1>个人资料</h1><p>用户可以设置昵称、头像和简介，并拥有公开的个人主页（/user/用户名）。</p></div></div>
+  <form class="card stack" method="post" action="/admin/profiles" data-dirty-guard>
+    <label class="check"><input type="checkbox" name="public_profiles"<%= config.publicProfiles ? ' checked' : '' %>><span>个人主页对所有人公开<small>关闭后，只有登录用户能查看他人主页。</small></span></label>
+    <div class="form-row">
+      <%- include('partials/field', { form: { values: { avatar_max_size_mb: config.avatarMaxFileSizeMb }, errors: {} }, name: 'avatar_max_size_mb', label: '头像文件上限（MB）', type: 'number', attrs: 'min="1" max="20"' }) %>
+      <%- include('partials/field', { form: { values: { avatar_size_limit: config.avatarSizeLimitPx }, errors: {} }, name: 'avatar_size_limit', label: '头像尺寸上限（像素）', type: 'number', attrs: 'min="64" max="4096"' }) %>
+      <%- include('partials/field', { form: { values: { timeline_page_size: config.timelinePageSize }, errors: {} }, name: 'timeline_page_size', label: '主页每页文章数', type: 'number', attrs: 'min="1" max="50"' }) %>
+    </div>
+    <label class="check"><input type="checkbox" name="allow_gif"<%= config.allowGif ? ' checked' : '' %>><span>允许 GIF 动图头像</span></label>
+    <label class="check"><input type="checkbox" name="allow_apng"<%= config.allowApng ? ' checked' : '' %>><span>允许 APNG / 动态 WebP 头像</span></label>
+    <div><button class="btn btn-primary" type="submit">保存设置</button></div>
+  </form>
+</div>

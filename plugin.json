@@ -1,20 +1,22 @@
 {
   "id": "colorful-profiles",
-  "name": "多彩个人资料",
-  "version": "3.0.0",
-  "description": "增强的用户个人资料：GIF/APNG 头像与正方形裁剪、昵称显示、邮箱重验证、公开资料页与文章/评论头像展示。依赖 advanced-comments 与 advanced-user-management。",
-  "author": "MoyuZJ / LinearTeam",
+  "name": "个人资料",
+  "version": "4.0.0",
+  "description": "昵称、头像（支持 GIF/APNG 动图，可选取正方形区域）和公开的个人主页；头像和昵称会显示在文章、评论和导航栏里。",
+  "author": "LinearPress",
+  "icon": "资料",
   "type": "both",
   "main": "index.ts",
-  "runtime": "cordis",
+  "views": "views",
   "public": "public",
+  "settings": "/admin/profiles",
   "styles": [
-    "colorful-profiles.css"
+    { "file": "colorful-profiles.css", "scope": "all" }
   ],
   "scripts": [
-    "colorful-profiles.js"
+    { "file": "colorful-profiles.js", "scope": "web", "paths": ["/account/profile"] }
   ],
   "permissions": [
-    "colorful-profiles:manage"
+    { "id": "colorful-profiles:manage", "label": "管理个人资料设置", "group": "用户" }
   ]
 }

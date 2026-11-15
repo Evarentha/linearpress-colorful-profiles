@@ -1,0 +1,48 @@
+<%#
+  Colorful profiles · edit your own profile (avatar with crop, nickname, links, bio).
+
+  Authors:
+  MoyuZJ <moyuzj@evarentha.com> @LinearTeam - Made in China with ♥
+  worryzu <worryzu@evarentha.com> @LinearTeam
+
+  Copyright (C) 2026 Evarentha
+  SPDX-License-Identifier: GPL-3.0-or-later
+%><div class="wrap wrap-read stack" data-lp-plugin="colorful-profiles">
+  <header class="list-head"><div><h1>编辑资料</h1><p>这些信息会显示在你的<a href="/user/<%= encodeURIComponent(profileUser.username) %>">个人主页</a>、文章和评论旁边。</p></div></header>
+
+  <section class="card cp-avatar-card" aria-labelledby="cp-avatar-title" data-cp-avatar data-max-mb="<%= config.avatarMaxFileSizeMb %>" data-max-px="<%= config.avatarSizeLimitPx %>">
+    <div data-cp-preview><%- avatar(profileUser, 96) %></div>
+    <div class="stack cp-avatar-text">
+      <h2 id="cp-avatar-title" class="section-title">头像</h2>
+      <p class="help">JPG、PNG、WebP<%= config.allowGif || config.allowApng ? '，可以是动图' : '' %>；不超过 <%= config.avatarMaxFileSizeMb %>MB、<%= config.avatarSizeLimitPx %>×<%= config.avatarSizeLimitPx %>。上传后可以选取正方形区域。</p>
+      <div class="cluster">
+        <label class="btn btn-sm cp-file">选择图片<input type="file" accept="image/png,image/jpeg,image/gif,image/webp" data-cp-file></label>
+        <% if (profile.avatar) { %><form method="post" action="/account/profile/avatar/remove" data-confirm="移除后显示名字首字。" data-confirm-title="移除头像" data-confirm-text="移除"><button class="btn btn-sm btn-ghost" type="submit">移除头像</button></form><% } %>
+      </div>
+    </div>
+  </section>
+
+  <form class="card stack" method="post" action="/account/profile" data-dirty-guard>
+    <div class="form-row">
+      <%- include('partials/field', { name: 'nickname', label: '昵称', placeholder: profileUser.username, help: `留空则显示用户名 ${profileUser.username}`, attrs: 'maxlength="30"' }) %>
+      <%- include('partials/field', { name: 'email', label: '邮箱', type: 'email', help: '用于登录通知和找回账号', autocomplete: 'email' }) %>
+    </div>
+    <label class="check"><input type="checkbox" name="show_email"<%= form.values.show_email ? ' checked' : '' %>><span>在个人主页公开邮箱</span></label>
+    <%- include('partials/field', { name: 'website', label: '个人网站', type: 'url', placeholder: 'https://', attrs: 'maxlength="300"' }) %>
+    <%- include('partials/field', { name: 'bio', label: '简介', type: 'textarea', rows: 5, help: '支持 Markdown：**粗体**、*斜体*、链接、列表。', attrs: 'maxlength="5000"' }) %>
+    <div class="form-row">
+      <%- include('partials/field', { name: 'representative', label: '代表作', attrs: 'maxlength="300"' }) %>
+      <%- include('partials/field', { name: 'contact', label: '其他联系方式', help: '会公开显示', attrs: 'maxlength="300"' }) %>
+    </div>
+    <div><button class="btn btn-primary" type="submit">保存资料</button></div>
+  </form>
+</div>
+
+<dialog class="dialog cp-crop-dialog" data-lp-plugin="colorful-profiles" data-cp-dialog>
+  <div class="dialog-body stack">
+    <h2>选取头像区域</h2>
+    <div class="cp-stage" data-cp-stage><img alt="" data-cp-image><div class="cp-frame" data-cp-frame tabindex="0" aria-label="头像区域，可以拖动或用方向键移动"></div></div>
+    <label class="cp-zoom"><span>大小</span><input type="range" min="10" max="100" value="100" data-cp-zoom></label>
+  </div>
+  <div class="dialog-actions"><button class="btn" type="button" data-cp-cancel>取消</button><button class="btn btn-primary" type="button" data-cp-save>使用这个头像</button></div>
+</dialog>

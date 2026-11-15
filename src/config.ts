@@ -4,8 +4,8 @@
  * Configuration model for the Colorful Profiles plugin.
  *
  * Authors:
- * MoyuZJ <moyuzj@moyuzj.cn> @LinearTeam - Made in China with ♥
- * worryzu <worryzu@gmail.com> @LinearTeam
+ * MoyuZJ <moyuzj@evarentha.com> @LinearTeam - Made in China with ♥
+ * worryzu <worryzu@evarentha.com> @LinearTeam
  *
  * Copyright (C) 2026 Evarentha
  * SPDX-License-Identifier: GPL-3.0-or-later
@@ -22,12 +22,6 @@
  * @since 1.0.0
  */
 
-/** 插件注册表配置服务的最小接口（由 ctx.plugins 满足）。 */
-export interface PluginConfigService {
-  getConfig<T = unknown>(id: string): T | null | Promise<T | null>;
-  setConfig(id: string, config: unknown): void | Promise<void>;
-}
-
 export interface CpConfig {
   /** 头像最大边长（像素），默认 1024 */
   avatarSizeLimitPx: number;
@@ -41,6 +35,8 @@ export interface CpConfig {
   timelinePageSize: number;
   /** 头像上传子目录（相对站点 uploads 根） */
   avatarDir: string;
+  /** Profile pages visible to everyone (otherwise signed-in users only). */
+  publicProfiles: boolean;
 }
 
 const DEFAULT_CONFIG: CpConfig = {
@@ -49,7 +45,8 @@ const DEFAULT_CONFIG: CpConfig = {
   allowGif: true,
   allowApng: true,
   timelinePageSize: 10,
-  avatarDir: 'avatars'
+  avatarDir: 'avatars',
+  publicProfiles: true
 };
 
 export function getDefaultConfig(): CpConfig {
@@ -77,16 +74,9 @@ export function normalizeConfig(raw: unknown): CpConfig {
     allowGif: asBoolean(input.allowGif, defaults.allowGif),
     allowApng: asBoolean(input.allowApng, defaults.allowApng),
     timelinePageSize: asNumber(input.timelinePageSize, defaults.timelinePageSize, 1),
-    avatarDir: asString(input.avatarDir, defaults.avatarDir).replace(/[\\/]+/g, '/').replace(/^\/+|\/+$/g, '') || defaults.avatarDir
+    avatarDir: asString(input.avatarDir, defaults.avatarDir).replace(/[\\/]+/g, '/').replace(/^\/+|\/+$/g, '') || defaults.avatarDir,
+    publicProfiles: asBoolean(input.publicProfiles, defaults.publicProfiles)
   };
-}
-
-export async function loadConfig(plugins: PluginConfigService): Promise<CpConfig> {
-  return normalizeConfig(await plugins.getConfig<unknown>('colorful-profiles'));
-}
-
-export async function saveConfig(plugins: PluginConfigService, config: CpConfig): Promise<void> {
-  await plugins.setConfig('colorful-profiles', config);
 }
 
 /** 从设置页表单构建配置（checkbox 为 on/undefined，数字为空回退默认）。 */
@@ -98,6 +88,7 @@ export function parseSettingsForm(body: Record<string, unknown>): CpConfig {
     allowGif: checkbox(body.allow_gif),
     allowApng: checkbox(body.allow_apng),
     timelinePageSize: Number(body.timeline_page_size) || undefined,
-    avatarDir: String(body.avatar_dir ?? '')
+    avatarDir: 'avatars',
+    publicProfiles: checkbox(body.public_profiles)
   });
 }
