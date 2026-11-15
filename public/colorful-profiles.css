@@ -35,9 +35,9 @@
 [data-lp-plugin="colorful-profiles"].cp-crop-dialog { width: min(560px, calc(100vw - 32px)); }
 [data-lp-plugin="colorful-profiles"] .cp-stage { position: relative; display: grid; place-items: center; max-height: 60vh; overflow: hidden; background: var(--lp-surface-2); border-radius: var(--lp-radius-md); user-select: none; touch-action: none; }
 [data-lp-plugin="colorful-profiles"] .cp-stage img { display: block; max-width: 100%; max-height: 60vh; }
-[data-lp-plugin="colorful-profiles"] .cp-frame { position: absolute; box-shadow: 0 0 0 9999px rgba(0, 0, 0, .5); border: 2px solid #fff; border-radius: 50%; cursor: move; }
+[data-lp-plugin="colorful-profiles"] .cp-crop-frame { position: absolute; box-shadow: 0 0 0 9999px rgba(0, 0, 0, .5); border: 2px solid #fff; border-radius: 50%; cursor: move; }
 [data-lp-plugin="colorful-profiles"] .cp-stage { justify-items: start; align-items: start; }
-[data-lp-plugin="colorful-profiles"] .cp-frame:focus-visible { outline: 2px solid var(--lp-focus); outline-offset: 2px; }
+[data-lp-plugin="colorful-profiles"] .cp-crop-frame:focus-visible { outline: 2px solid var(--lp-focus); outline-offset: 2px; }
 [data-lp-plugin="colorful-profiles"] .cp-zoom { display: flex; align-items: center; gap: var(--lp-space-3); font-size: var(--lp-text-sm); }
 [data-lp-plugin="colorful-profiles"] .cp-zoom input { flex: 1; accent-color: var(--lp-accent); }
 

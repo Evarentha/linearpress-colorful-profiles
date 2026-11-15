@@ -18,7 +18,7 @@
   const input = card.querySelector('[data-cp-file]');
   const image = dialog.querySelector('[data-cp-image]');
   const stage = dialog.querySelector('[data-cp-stage]');
-  const frame = dialog.querySelector('[data-cp-frame]');
+  const frame = dialog.querySelector('[data-cp-crop-frame]');
   const zoom = dialog.querySelector('[data-cp-zoom]');
   const maxMb = Number(card.dataset.maxMb) || 10;
   const maxPx = Number(card.dataset.maxPx) || 1024;
