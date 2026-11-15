@@ -1,12 +1,12 @@
 {
   "name": "@evarentha/linearpress-colorful-profiles",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "license": "GPL-3.0-or-later",
-  "description": "增强的用户个人资料：GIF/APNG 头像与正方形裁剪、昵称显示、邮箱重验证、公开资料页与文章/评论头像展示。依赖 advanced-comments 与 advanced-user-management。",
+  "description": "昵称、头像（支持 GIF/APNG 动图，可选取正方形区域）和公开的个人主页；头像和昵称会显示在文章、评论和导航栏里。",
   "type": "module",
   "main": "index.ts",
   "peerDependencies": {
-    "linearpress": "^3.0.0"
+    "linearpress": "^4.0.0"
   },
   "peerDependenciesMeta": {
     "nodemailer": {
